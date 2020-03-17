@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Test WebSocket</title>
@@ -23,10 +23,10 @@
 <hr>
 <form class="row">
     <div class="col-sm-3">
-        <input id="text" type="text" class="form-control" placeholder="Command">
+        <label for="text">Command</label><input id="text" type="text" class="form-control" placeholder="Command">
     </div>
     <div class="col-sm-1">
-        <button id="sendBtn" class="btn btn-success" οnclick="send()">Send</button>
+        <button id="sendBtn" class="btn btn-success" onclick="send()">Send</button>
     </div>
 </form>
 <hr>
@@ -49,20 +49,20 @@
             };
 
             //onOpen callback
-            websocket.onopen = function (event) {
+            websocket.onopen = function () {
                 setMessageInnerHTML("Connection open.");
-            }
+            };
 
             //onMessage callback
             websocket.onmessage = function (event) {
                 console.log("Received Message: " + event.data);
                 setMessageInnerHTML(event.data);
-            }
+            };
 
             //onClose callback
             websocket.onclose = function () {
                 setMessageInnerHTML("Connection closed.");
-            }
+            };
 
             //Listen for the window closing event.
             window.onbeforeunload = function () {
@@ -71,12 +71,12 @@
         } else {
             alert("Connection failed! The current browser does not support WebSocket!")
         }
-    })
+    });
 
     $("#closeConnBtn").click(function () {
         closeWebSocket();
         $("#connectBtn").attr('disabled', false);
-    })
+    });
 
     //setMessage in page
     function setMessageInnerHTML(innerHTML) {
@@ -90,7 +90,7 @@
 
     //send message
     function send() {
-        var message = $("#text").val()
+        var message = $("#text").val();
         websocket.send(message);
         //alert(message)
     }
