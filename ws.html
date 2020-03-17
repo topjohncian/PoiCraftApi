@@ -1,25 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Test WebSocket</title>
+    <link rel="stylesheet"
+          href="https://cdn.bootcss.com/bootstrap/4.0.0-beta/css/bootstrap.min.css">
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+    <script
+            src="https://cdn.bootcss.com/bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
 </head>
 <body>
-<script>
-    var ws = new WebSocket("ws://localhost:8080/ws")
-
-    ws.onopen = function(evt) {
-        console.log("Connection open ...");
-        ws.send("Hello WebSockets!");
-    };
-    //接收到消息时触发
-    ws.onmessage = function(evt) {
-        console.log("Received Message: " + evt.data);
-    };
-    //连接关闭时触发
-    ws.onclose = function(evt) {
-        console.log("Connection closed.");
-    };
-</script>
+<h3>WebSocket Test</h3>
+<div class="row">
+    <div class="col-sm-3">
+        <button id="connectBtn" class="btn btn-info">Connect</button>
+        <button id="closeConnBtn" class="btn btn-danger">Close connection</button>
+        <button id="testBtn" class="btn btn-default">Test</button>
+    </div>
+    <div class="col-sm-3">
+    </div>
+</div>
+<hr>
+<form class="row">
+    <div class="col-sm-3">
+        <input id="text" type="text" class="form-control" placeholder="Command">
+    </div>
+    <div class="col-sm-1">
+        <button id="sendBtn" class="btn btn-success" οnclick="send()">Send</button>
+    </div>
+</form>
+<hr>
+<div>
+    <ul class="list-group" id="message"></ul>
+</div>
 </body>
-</html>
+<script type="text/javascript">
+    var webSocket = null;
+
+    $("#connectBtn").click(function () {
+        if ('WebSocket' in window) {
+            websocket = new WebSocket("ws://localhost:8080/ws");
+
+            $("#connectBtn").attr('disabled', true);
+
+            //onError allback
+            websocket.onerror = function () {
+                setMessageInnerHTML("Connection failed! ");
+            };
+
+            //onOpen callback
+            websocket.onopen = function (event) {
+                setMessageInnerHTML("Connection open.");
+            }
+
+            //onMessage callback
+            websocket.onmessage = function (event) {
+                console.log("Received Message: " + event.data);
+                setMessageInnerHTML(event.data);
+            }
+
+            //onClose callback
+            websocket.onclose = function () {
+                setMessageInnerHTML("Connection closed.");
+            }
+
+            //Listen for the window closing event.
+            window.onbeforeunload = function () {
+                websocket.close();
+            }
+        } else {
+            alert("Connection failed! The current browser does not support WebSocket!")
+        }
+    })
+
+    $("#closeConnBtn").click(function () {
+        closeWebSocket();
+        $("#connectBtn").attr('disabled', false);
+    })
+
+    //setMessage in page
+    function setMessageInnerHTML(innerHTML) {
+        $("#message").append("<li class=\"list-group-item\">" + innerHTML + "</li>");
+    }
+
+    //close connection
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+    //send message
+    function send() {
+        var message = $("#text").val()
+        websocket.send(message);
+        //alert(message)
+    }
+
+    $("#testBtn").click(function () {
+        alert('testBtn')
+    })
+
+</script>

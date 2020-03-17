@@ -12,14 +12,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	 "github.com/gorilla/websocket"
+	"github.com/gorilla/websocket"
 )
 
 var cmd *exec.Cmd
 var stdin io.WriteCloser
 var stdout io.ReadCloser
 var upGrader = websocket.Upgrader{
-	CheckOrigin: func (r *http.Request) bool {
+	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
@@ -27,14 +27,15 @@ var upGrader = websocket.Upgrader{
 var lastEchoLine string
 var stdoutLogs [5]string
 var execLog *log.Logger
+
 func main() {
 	fileName := "exec.log"
-	logFile,err  := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0766)
+	logFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0766)
 	if err != nil {
 		log.Fatalln("open file error !")
 	}
 	defer logFile.Close()
-	execLog = log.New(logFile,"",log.Lshortfile)
+	execLog = log.New(logFile, "", log.Lshortfile)
 	go runBedrock()
 	time.Sleep(2 * time.Second)
 	go readStdout()
@@ -63,7 +64,7 @@ func runBedrock() {
 	cmd.Run()
 }
 
-func readStdout(){
+func readStdout() {
 	reader := bufio.NewReader(stdout)
 
 	//实时循环读取输出流中的一行内容
@@ -77,7 +78,6 @@ func readStdout(){
 		execLog.Println(line)
 	}
 }
-
 
 func runAPI() {
 	r := gin.Default()
@@ -108,12 +108,12 @@ func runAPI() {
 			if err != nil {
 				break
 			}
-			time.Sleep(2*time.Second)
-			execLog.Println("Remote(API):"+string(message))
-			fmt.Println("Remote(API):"+string(message))
-			stdin.Write([]byte(string(message)+ "\n"))
+			time.Sleep(2 * time.Second)
+			execLog.Println("Remote(API):" + string(message))
+			fmt.Println("Remote(API):" + string(message))
+			stdin.Write([]byte(string(message) + "\n"))
 			//写入ws数据
-			time.Sleep(2*time.Second)
+			time.Sleep(2 * time.Second)
 			err = ws.WriteMessage(mt, []byte("ok"))
 			if err != nil {
 				break
