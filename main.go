@@ -24,9 +24,10 @@ var upGrader = websocket.Upgrader{
 	},
 }
 
-var lastEchoLine string
-var stdoutLogs [5]string
 var execLog *log.Logger
+var lastEchoLine string
+
+var returnJsonMap map[string]string
 
 func main() {
 	fileName := "exec.log"
@@ -47,9 +48,12 @@ func main() {
 		fmt.Print("> ")
 		cmdString, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
 		}
-		stdin.Write([]byte(cmdString))
+		_, err = stdin.Write([]byte(cmdString))
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
@@ -61,7 +65,10 @@ func runBedrock() {
 	stdout, _ = cmd.StdoutPipe()
 	cmd.Stderr = os.Stderr
 
-	cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func readStdout() {
@@ -73,9 +80,15 @@ func readStdout() {
 		if err2 != nil || io.EOF == err2 {
 			break
 		}
-		matched, err := regexp.MatchString("(?ims)[\\[]\\d{4}[-]([0][1-9]|(1[0-2]))[-]([1-9]|([012]\\d)|(3[01]))([ \\t\\n\\x0B\\f\\r])(([0-1]{1}[0-9]{1})|([2]{1}[0-4]{1}))([:])(([0-5]{1}[0-9]{1}|[6]{1}[0]{1}))([:])((([0-5]{1}[0-9]{1}|[6]{1}[0]{1})))([ \\t\\n\\x0B\\f\\r])(INFO)[\\]]([ \\t\\n\\x0B\\f\\r])(Player disconnected)([:])([ \\t\\n\\x0B\\f\\r])(.*)", str)
-
-		execLog.Println(line)
+		matched, err := regexp.MatchString("(?ims)[\\[]\\d{4}[-]([0][1-9]|(1[0-2]))[-]([1-9]|([012]\\d)|(3[01]))([ \\t\\n\\x0B\\f\\r])(([0-1]{1}[0-9]{1})|([2]{1}[0-4]{1}))([:])(([0-5]{1}[0-9]{1}|[6]{1}[0]{1}))([:])((([0-5]{1}[0-9]{1}|[6]{1}[0]{1})))([ \\t\\n\\x0B\\f\\r])(INFO)[\\]]([ \\t\\n\\x0B\\f\\r])(Player disconnected)([:])([ \\t\\n\\x0B\\f\\r])(.*)", line)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if !matched {
+			execLog.Println(line)
+		}
+		fmt.Println(line)
+		lastEchoLine = line
 	}
 }
 
@@ -90,7 +103,10 @@ func runAPI() {
 			})
 			return
 		}
-		stdin.Write([]byte(command + "\n"))
+		_, err := stdin.Write([]byte(command + "\n"))
+		if err != nil {
+			log.Fatal(err)
+		}
 		c.JSON(200, gin.H{
 			"message": command,
 		})
@@ -104,21 +120,29 @@ func runAPI() {
 		defer ws.Close()
 		for {
 			//读取ws中的数据
-			mt, message, err := ws.ReadMessage()
+			_, message, err := ws.ReadMessage()
 			if err != nil {
 				break
 			}
 			time.Sleep(2 * time.Second)
 			execLog.Println("Remote(API):" + string(message))
 			fmt.Println("Remote(API):" + string(message))
-			stdin.Write([]byte(string(message) + "\n"))
+			_, err = stdin.Write([]byte(string(message) + "\n"))
+			if err != nil {
+				log.Fatal(err)
+			}
 			//写入ws数据
 			time.Sleep(2 * time.Second)
-			err = ws.WriteMessage(mt, []byte("ok"))
+			returnJsonMap = make(map[string]string)
+			returnJsonMap["returnString"] = lastEchoLine
+			err = ws.WriteJSON(returnJsonMap)
 			if err != nil {
 				break
 			}
 		}
 	})
-	r.Run()
+	err := r.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
